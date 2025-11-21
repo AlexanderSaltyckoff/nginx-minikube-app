@@ -41,12 +41,3 @@ jobs:
         echo "🌐 Services:"
         kubectl get services
         echo "🔄 Using image version: $GITHUB_SHA"
-        
-    # Шаг 5: Запускаем port-forward в фоне (опционально)
-    - name: Start port-forward
-      run: |
-        # Останавливаем предыдущий port-forward если есть
-        pkill -f "kubectl port-forward" || true
-        # Запускаем новый в фоне
-        nohup kubectl port-forward svc/nginx-service 8888:80 --address 0.0.0.0 > /tmp/port-forward.log 2>&1 &
-        echo "🔗 Port-forward started on :8888"
