@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мое приложение в Minikube</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        .deploy-time {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Привет из Minikube!</h1>
+        <p>Это мое первое приложение с CI/CD пайплайном</p>
+        <p>Изменения автоматически деплоятся через GitHub Actions</p>
+        
+        <div class="deploy-time">
+            <strong>Время сборки:</strong>
+            <br>
+            <span id="timestamp"></span>
+        </div>
+    </div>
+
+    <script>
+        // Показываем время последнего обновления
+        document.getElementById('timestamp').textContent = new Date().toLocaleString('ru-RU');
+    </script>
+</body>
+</html>
