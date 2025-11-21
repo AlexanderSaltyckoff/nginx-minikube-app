@@ -1,0 +1,28 @@
+name: Deploy to Minikube
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build and push Docker image
+      run: |
+        docker build -t alexandersaltyckoff/nginx-app:latest .
+        docker push alexandersaltyckoff/nginx-app:latest
+        
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl set image deployment/nginx-app nginx=alexandersaltyckoff/nginx-app:latest
+        kubectl rollout status deployment/nginx-app --timeout=3m
+        
+    - name: Verify deployment
+      run: |
+        kubectl get pods
+        echo "✅ Deployment completed successfully!"
