@@ -3,34 +3,63 @@ name: Deploy to Minikube
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:    # Ручной запуск по кнопке
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+      version:
+        description: 'Deploy specific version (git SHA)'
+        required: false
+        type: string
 
 jobs:
   deploy:
     runs-on: self-hosted
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: http://192.168.1.137:8888  # Замените на ваш реальный IP
     
     steps:
     # Шаг 1: Получаем код из репозитория
     - name: Checkout code
       uses: actions/checkout@v4
       
-    # Шаг 2: Собираем и пушим Docker образ с версионированием
+    # Шаг 2: Собираем и пушим Docker образ
     - name: Build and push Docker image
       run: |
-        # Собираем с уникальным тегом (хэш коммита) и latest
-        docker build -t alexandersaltyckoff/nginx-app:$GITHUB_SHA -t alexandersaltyckoff/nginx-app:latest .
+        # Определяем версию для образа
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION="$GITHUB_SHA"
+        fi
         
-        # Пушим оба тега
-        docker push alexandersaltyckoff/nginx-app:$GITHUB_SHA
+        echo "🔨 Building image version: $VERSION"
+        
+        docker build -t alexandersaltyckoff/nginx-app:$VERSION -t alexandersaltyckoff/nginx-app:latest .
+        docker push alexandersaltyckoff/nginx-app:$VERSION
         docker push alexandersaltyckoff/nginx-app:latest
         
-    # Шаг 3: Деплоим ВСЕ манифесты в Kubernetes
+    # Шаг 3: Деплоим в Kubernetes
     - name: Deploy to Kubernetes
       run: |
-        # Применяем все манифесты из папки k8s (для конфигурации)
+        # Применяем все манифесты
         kubectl apply -f k8s/
         
-        # Обновляем образ на уникальный тег (для контента)
-        kubectl set image deployment/nginx-app nginx=alexandersaltyckoff/nginx-app:$GITHUB_SHA
+        # Определяем какой образ деплоить
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+          kubectl set image deployment/nginx-app nginx=alexandersaltyckoff/nginx-app:${{ github.event.inputs.version }}
+          echo "🚀 Deploying specific version: ${{ github.event.inputs.version }}"
+        else
+          kubectl set image deployment/nginx-app nginx=alexandersaltyckoff/nginx-app:$GITHUB_SHA
+          echo "🚀 Deploying latest commit: $GITHUB_SHA"
+        fi
         
         # Ждем завершения rolling update
         kubectl rollout status deployment/nginx-app --timeout=5m
@@ -38,9 +67,9 @@ jobs:
     # Шаг 4: Проверяем деплой
     - name: Verify deployment
       run: |
-        echo "✅ Deployment completed successfully!"
+        echo "✅ Deployment to ${{ github.event.inputs.environment || 'production' }} completed successfully!"
         echo "📦 Current pods:"
         kubectl get pods -o wide
         echo "🌐 Services:"
         kubectl get services
-        echo "🔄 Using image version: $GITHUB_SHA"
+        echo "🔄 Deployed version: $GITHUB_SHA"
