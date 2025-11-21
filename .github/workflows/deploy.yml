@@ -14,15 +14,23 @@ jobs:
       
     - name: Build and push Docker image
       run: |
-        docker build -t alexandersaltyckoff/nginx-app:latest .
+        # Собираем с уникальным тегом (хэш коммита) и latest
+        docker build -t alexandersaltyckoff/nginx-app:$GITHUB_SHA -t alexandersaltyckoff/nginx-app:latest .
+        
+        # Пушим оба тега
+        docker push alexandersaltyckoff/nginx-app:$GITHUB_SHA
         docker push alexandersaltyckoff/nginx-app:latest
         
     - name: Deploy to Kubernetes
       run: |
-        kubectl set image deployment/nginx-app nginx=alexandersaltyckoff/nginx-app:latest
-        kubectl rollout status deployment/nginx-app --timeout=3m
+        # Обновляем на конкретную версию (Kubernetes увидит изменение)
+        kubectl set image deployment/nginx-app nginx=alexandersaltyckoff/nginx-app:$GITHUB_SHA
+        
+        # Ждем rolling update
+        kubectl rollout status deployment/nginx-app --timeout=5m
         
     - name: Verify deployment
       run: |
+        echo "✅ Deployment completed!"
         kubectl get pods
-        echo "✅ Deployment completed successfully!"
+        echo "🔄 Using image: alexandersaltyckoff/nginx-app:$GITHUB_SHA"
