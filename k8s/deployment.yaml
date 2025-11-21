@@ -14,12 +14,11 @@ spec:
       labels:
         app: nginx-app
     spec:
-      hostNetwork: true  # ← эта строка должна быть здесь
       containers:
       - name: nginx
         image: alexandersaltyckoff/nginx-app:latest
         ports:
-        - containerPort: 80
+        - containerPort: 80    # ← ТОЛЬКО containerPort!
         resources:
           requests:
             memory: "64Mi"
