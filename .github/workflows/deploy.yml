@@ -9,9 +9,11 @@ jobs:
     runs-on: self-hosted
     
     steps:
+    # Шаг 1: Получаем код из репозитория
     - name: Checkout code
       uses: actions/checkout@v4
       
+    # Шаг 2: Собираем и пушим Docker образ с версионированием
     - name: Build and push Docker image
       run: |
         # Собираем с уникальным тегом (хэш коммита) и latest
@@ -21,16 +23,30 @@ jobs:
         docker push alexandersaltyckoff/nginx-app:$GITHUB_SHA
         docker push alexandersaltyckoff/nginx-app:latest
         
+    # Шаг 3: Деплоим ВСЕ манифесты в Kubernetes
     - name: Deploy to Kubernetes
       run: |
-        # Обновляем на конкретную версию (Kubernetes увидит изменение)
-        kubectl set image deployment/nginx-app nginx=alexandersaltyckoff/nginx-app:$GITHUB_SHA
+        # Применяем все манифесты из папки k8s
+        kubectl apply -f k8s/
         
-        # Ждем rolling update
+        # Ждем завершения rolling update
         kubectl rollout status deployment/nginx-app --timeout=5m
         
+    # Шаг 4: Проверяем деплой
     - name: Verify deployment
       run: |
-        echo "✅ Deployment completed!"
-        kubectl get pods
-        echo "🔄 Using image: alexandersaltyckoff/nginx-app:$GITHUB_SHA"
+        echo "✅ Deployment completed successfully!"
+        echo "📦 Current pods:"
+        kubectl get pods -o wide
+        echo "🌐 Services:"
+        kubectl get services
+        echo "🔄 Using image version: $GITHUB_SHA"
+        
+    # Шаг 5: Запускаем port-forward в фоне (опционально)
+    - name: Start port-forward
+      run: |
+        # Останавливаем предыдущий port-forward если есть
+        pkill -f "kubectl port-forward" || true
+        # Запускаем новый в фоне
+        nohup kubectl port-forward svc/nginx-service 8888:80 --address 0.0.0.0 > /tmp/port-forward.log 2>&1 &
+        echo "🔗 Port-forward started on :8888"
