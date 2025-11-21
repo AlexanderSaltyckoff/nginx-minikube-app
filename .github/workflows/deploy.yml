@@ -26,8 +26,11 @@ jobs:
     # Шаг 3: Деплоим ВСЕ манифесты в Kubernetes
     - name: Deploy to Kubernetes
       run: |
-        # Применяем все манифесты из папки k8s
+        # Применяем все манифесты из папки k8s (для конфигурации)
         kubectl apply -f k8s/
+        
+        # Обновляем образ на уникальный тег (для контента)
+        kubectl set image deployment/nginx-app nginx=alexandersaltyckoff/nginx-app:$GITHUB_SHA
         
         # Ждем завершения rolling update
         kubectl rollout status deployment/nginx-app --timeout=5m
